@@ -1,0 +1,6 @@
+[database]
+host = "192.168.2.82"
+name = "postal2"
+user = "root"
+password = "password"
+port = "3306"
