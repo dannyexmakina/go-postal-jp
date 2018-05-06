@@ -1,6 +1,6 @@
 # postal
 
-- 日本郵便が提供する郵便番号CSVを定型のSQLに変換するコマンドライン
+- 日本郵便が提供する郵便番号CSVを定型のSQL/SQLiteDBに変換するコマンドライン
   - http://www.post.japanpost.jp/zipcode/dl/kogaki-zip.html
 - フォームにて郵便番号を入力し、住所を自動入力する用途などを想定している
 
@@ -45,18 +45,25 @@
 - `env/postal/docker/mysql/docker-entrypoint-initdb.d/create.sql`
 - [docs/db.md](docs/db.md)
 
-### 実行時設定
+## 実行時設定
 
 - [docs/env.md](docs/env.md)
 - [docs/config.md](docs/config.md)
 
-### 実行コマンド
+## 実行コマンド
 
 - `cd env/postal`
 - `docker-compose up`
 
-### 生成されるSQLファイル
+## 生成されるファイル
 
 - `db/postal.sql`
+  - SQLファイル（INSERT文・他DBで使用する用）
+- `db/postal.db`
+  - SQLite DB（そのまま使用可能）
 
+
+## API生成用 Swaggerファイル
+
+- [swagger.yml](swagger.yml)
 
