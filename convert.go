@@ -79,7 +79,7 @@ func (p Postal) Close() error {
 
 func (p Postal) Download() (n string, e error) {
 
-  Log("Info","start download")
+  Log("Info","downloading zip")
 
 	temp,te := ioutil.TempDir("","postal")
 	if te != nil {
@@ -113,7 +113,7 @@ func (p Postal) Download() (n string, e error) {
 
 func (p Postal) Unzip(zipfile string) (path string, e error) {
 
-  Log("Info","start unzip")
+  Log("Info","unzipping csv")
 
   z, err := zip.OpenReader(zipfile)
   if err != nil {
@@ -158,7 +158,7 @@ func (p Postal) Unzip(zipfile string) (path string, e error) {
 
 func (p Postal) ParseAndInsert(filename string) (e error) {
 
-  Log("Info","start parse")
+  Log("Info","parsing csv")
 
   f, fe := os.OpenFile(filename, os.O_RDONLY, 0644)
   if fe != nil {
@@ -178,11 +178,11 @@ func (p Postal) ParseAndInsert(filename string) (e error) {
   defer connection.Close()
   session := connection.NewSession(nil)
 
-  Log("Info", "start initialize")
+  Log("Info", "initializing SQLite")
 
   session.Exec("CREATE TABLE postal (id integer primary key autoincrement, first, last, code, prefcode, pref, pref_kana, city, city_kana, street, street_kana, jiscode);")
 
-  Log("Info","start insert")
+  Log("Info","inserting to SQLite")
 
   var counter int
   var r1 = regexp.MustCompile("（(.*?)）")
@@ -210,7 +210,7 @@ func (p Postal) ParseAndInsert(filename string) (e error) {
    }
   }
 
-  Log("Info","start screening")
+  Log("Info","screening SQLite")
 
 	var dups []PostalData
 	e = session.Select("code").
@@ -272,7 +272,33 @@ func (p Postal) ParseAndInsert(filename string) (e error) {
 		}
 	}
 
-  Log("Info","start dump")
+  Log("Info","cloning SQLite")
+
+  dumpcon, err := dbr.Open("sqlite3", config.Sqlite.Save, nil)
+  if err != nil {
+    Log("Warn",e)
+    return err
+  }
+  defer dumpcon.Close()
+  dumpsess := dumpcon.NewSession(nil)
+  _,e = dumpsess.Exec("ATTACH DATABASE '" + config.Sqlite.Path + "' AS mem;")
+  if e != nil {
+    Log("Warn",e)
+    return e
+  }
+  _,e = dumpsess.Exec("CREATE TABLE main.postal AS SELECT * FROM mem.postal;")
+  if e != nil {
+    Log("Warn",e)
+    return e
+  }
+  _,e = dumpsess.Exec("DETACH DATABASE mem;")
+  if e != nil {
+    Log("Warn",e)
+    return e
+  }
+
+
+  Log("Info","dumping SQLite")
 
 	var results []PostalData
 	e = session.Select("*").

@@ -29,6 +29,7 @@ type PostalConfig struct {
 }
 type PostalConfigSqlite struct {
   Path string
+  Save string
 }
 type PostalConfigSql struct {
   Path string

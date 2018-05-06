@@ -6,10 +6,8 @@ csvname = "KEN_ALL.CSV"
 path = "/var/shared/postal.sql"
 
 [sqlite]
-path = ":memory:"
-#path = "/var/shared/postal.db"
+path = "file:memdb1?mode=memory&cache=shared"
+save = "/var/shared/postal.db"
 
 [mysql]
 dsn = "root:password@tcp(mysql:3307)/test?charset=utf8"
-
-
