@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/golang-plus/uuid"
   "go.uber.org/zap"
   "go.uber.org/zap/zapcore"
   "fmt"
@@ -9,14 +8,6 @@ import (
   "strings"
 
 )
-
-func CodeToUuid(code string) (us string, e error) {
-	u,ue := uuid.NewV5("postal",code)
-	if ue != nil {
-		return us,ue
-	}
-	return u.String(), nil
-}
 
 func Log(level string, messages ...interface{}) {
   log,_ := zap.NewDevelopment()

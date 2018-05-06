@@ -1,34 +1,50 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
+  "github.com/joho/godotenv"
+	"github.com/BurntSushi/toml"
 
+  "os"
+  "path/filepath"
 )
+
+
+type Postal struct {
+  Dir string
+  Conf PostalConfig
+
+}
 
 type PostalConfig struct {
   Input string
   Output string
-  Sqlite string
+
+  AssetPath string
   Chunk int
+  Url string
+  CsvName string
+  Sql PostalConfigSql
+  Sqlite PostalConfigSqlite
+  Mysql PostalConfigMySql
 }
+type PostalConfigSqlite struct {
+  Path string
+}
+type PostalConfigSql struct {
+  Path string
+}
+type PostalConfigMySql struct {
+  Dsn string
+}
+
 var config PostalConfig
 
-var postal_default_output = "KEN_ALL.sql"
-var postal_csv_name = "KEN_ALL.CSV"
+type Postals []PostalData
 
-type Postals []Postal
-
-type Postal struct {
+type PostalData struct {
   Id int
   First string
   Last string
-  P1 string
-  P2 string
-  P3 string
-  P4 string
-  P5 string
-  P6 string
-  P7 string
   Code string
   Prefcode string
   Pref string
@@ -40,14 +56,22 @@ type Postal struct {
   Jiscode string
 }
 
+type CountRows struct {
+	Count int
+}
+
 func init(){
   config.Chunk = 1000
 
   if err := godotenv.Load(); err != nil {
     Log("Fatal",err)
   }
-  if err := InitializeSqlite(); err != nil {
-    Log("Fatal",err)
-  }
+
+  assetPath := os.Getenv("asset_path")
+	_, cerr := toml.DecodeFile(filepath.Join(assetPath, "config.toml"), &config)
+	if cerr != nil {
+    Log("Fatal",cerr)
+	}
+  config.AssetPath = assetPath
 
 }

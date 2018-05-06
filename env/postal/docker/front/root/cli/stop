@@ -1,0 +1,3 @@
+#!/bin/bash
+supervisorctl stop php-fpm
+supervisorctl stop nginx

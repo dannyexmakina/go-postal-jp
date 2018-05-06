@@ -1,0 +1,4 @@
+#!/bin/bash
+cd /var/go/src/gitlab.flama.jp/go/form
+go build -o ./_build/server
+supervisorctl reload all

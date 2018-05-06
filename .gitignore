@@ -1,5 +1,6 @@
 /build
 /vendor
 /temp
+/db
 .env
 !.gitkeep

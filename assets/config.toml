@@ -1,6 +1,15 @@
-[database]
-host = "192.168.2.82"
-name = "postal2"
-user = "root"
-password = "password"
-port = "3306"
+url = "http://www.post.japanpost.jp/zipcode/dl/kogaki/zip/ken_all.zip"
+chunk = 1000
+csvname = "KEN_ALL.CSV"
+
+[sql]
+path = "/var/shared/postal.sql"
+
+[sqlite]
+path = ":memory:"
+#path = "/var/shared/postal.db"
+
+[mysql]
+dsn = "root:password@tcp(mysql:3307)/test?charset=utf8"
+
+
