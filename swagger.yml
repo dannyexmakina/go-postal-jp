@@ -19,7 +19,7 @@ paths:
       - name: "first"
         in: "formData"
         description: "first 3 digit string"
-        required: true
+        required: false
         type: "string"
         format: "string"
       - name: "second"
@@ -28,11 +28,19 @@ paths:
         required: false
         type: "string"
         format: "string"
+      - name: "code"
+        in: "formData"
+        description: "full 7 digit string"
+        required: false
+        type: "string"
+        format: "string"
       responses:
         200:
           description: "success"
           schema:
-            $ref: "#/definitions/Postal"
+            type: "array"
+            items:
+              $ref: "#/definitions/Postal"
         404:
           description: "not found"
 definitions:
