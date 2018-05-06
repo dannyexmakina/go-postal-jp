@@ -1,0 +1,87 @@
+swagger: "2.0"
+info:
+  description: "Postal"
+  version: "1.0.0"
+  title: "Postal"
+schemes:
+- "http"
+paths:
+  /postal:
+    post:
+      tags:
+      - "postal"
+      summary: "Find addresses from postal code"
+      description: "Returns postal"
+      operationId: "Postal"
+      consumes:
+      - "application/x-www-form-urlencoded"
+      parameters:
+      - name: "first"
+        in: "formData"
+        description: "first 3 digit string"
+        required: true
+        type: "string"
+        format: "string"
+      - name: "second"
+        in: "formData"
+        description: "second 4 digit string"
+        required: false
+        type: "string"
+        format: "string"
+      responses:
+        200:
+          description: "success"
+          schema:
+            $ref: "#/definitions/Postal"
+        404:
+          description: "not found"
+definitions:
+  Postal:
+    type: "object"
+    required:
+    - "first"
+    - "second"
+    - "pref"
+    - "prefcode"
+    - "pref_kana"
+    properties:
+      first:
+        type: "string"
+        example: "000"
+        description: "first 3 digit string"
+      second:
+        type: "string"
+        example: "0000"
+        description: "second 4 digit string"
+      pref:
+        type: "string"
+        example: "北海道"
+        description: "都道府県名"
+      prefcode:
+        type: "string"
+        example: "01"
+        description: "都道府県番号"
+      pref_kana:
+        type: "string"
+        example: "ホッカイドウ"
+        description: "都道府県名カナ"
+      city:
+        type: "string"
+        example: "札幌市中央区"
+        description: "市区郡町村名"
+      city_kana:
+        type: "string"
+        example: "サッポロシチュウオウク"
+        description: "市区郡町村名カナ"
+      street:
+        type: "string"
+        example: "旭ケ丘"
+        description: "町域名"
+      street_kana:
+        type: "string"
+        example: "アサヒガオカ"
+        description: "町域名カナ"
+      jiscode:
+        type: "string"
+        example: "01101"
+        description: "地方自治体コード"
