@@ -1,23 +1,20 @@
 package main
 
 import (
-  "path/filepath"
-  "os"
-//  "errors"
-  "io"
-  "net/http"
-  "io/ioutil"
-  "archive/zip"
-  "golang.org/x/text/encoding/japanese"
-  "golang.org/x/text/transform"
-  "encoding/csv"
+	"archive/zip"
+	"errors"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
+)
 
-	"github.com/gocraft/dbr"
-  _ "github.com/mattn/go-sqlite3"
-
-  "bytes"
-  "regexp"
-
+const (
+	Tablename     = "postals"
+	TempDirName   = "tml"
+	AvoidAddress1 = "イカニケイサイガナイバアイ"
+	AvoidAddress2 = "以下に掲載がない場合"
 )
 
 /*
@@ -25,342 +22,218 @@ Parse CSV from JapanPost
 
 ( See http://www.post.japanpost.jp/zipcode/dl/kogaki-zip.html )
 */
+
 func Convert() (e error) {
-
-  p,pe := NewPostal()
-  if pe != nil {
-    return pe
-  }
-  defer p.Close()
-
-  n,ne := p.Download()
-  if ne != nil {
-    Log("Warn",ne)
-    return ne
-  }
-
-  c,ce := p.Unzip(n)
-  if ce != nil {
-    Log("Warn",ce)
-    return ce
-  }
-
-  if len(c) < 1 {
-    Log("Warn", "unzip fail")
-    return
-  }
-
-  se := p.ParseAndInsert(c)
-  if se != nil {
-    Log("Warn",se)
-    return se
-  }
-
-  Log("Info", "end")
-
-  return nil
-}
-
-func NewPostal() (p Postal, e error) {
-  
-  Log("Info", "start")
-  
-	temp,te := ioutil.TempDir("","postal")
-	if te != nil {
-		return p,te
-	}
-  p.Dir = temp
-  return p,nil
-}
-
-func (p Postal) Close() error {
-  return os.RemoveAll(p.Dir)
-}
-
-func (p Postal) Download() (n string, e error) {
-
-  Log("Info","downloading zip")
-
-	temp,te := ioutil.TempDir("","postal")
-	if te != nil {
-    Log("Warn", te)
-		return n,te
+	csvpath, err := Download(config.Url)
+	if err != nil {
+		return err
 	}
 
-  n = filepath.Join(temp, "zip")
-  dst, err := os.Create(n)
-  if err != nil {
-    Log("Warn", err)
-      return n,err
-  }
-  defer dst.Close()
+	if len(csvpath) < 1 {
+		e = errors.New("Download fail")
+		return
+	}
 
-  r,err := http.Get(config.Url)
-  if err != nil {
-    Log("Warn", err, config.Url)
-    return n,err
-  }
-  defer r.Body.Close()
-  _,e = io.Copy(dst, r.Body) 
-  if e != nil {
-    Log("Warn", e)
-    return n,e
-  }
-  return n,nil
-
+	if err := ParseAndInsert(csvpath); err != nil {
+		e = err
+		return
+	}
+	temp := filepath.Dir(csvpath)
+	os.RemoveAll(temp)
+	return
 }
 
+func Download(url string) (path string, e error) {
 
-func (p Postal) Unzip(zipfile string) (path string, e error) {
+	temp, err := os.MkdirTemp(config.Storagepath, TempDirName)
+	if err != nil {
+		e = err
+		return
+	}
 
-  Log("Info","unzipping csv")
+	zp := filepath.Join(temp, "zip")
+	dst, err := os.Create(zp)
+	if err != nil {
+		e = err
+		return
+	}
+	defer dst.Close()
 
-  z, err := zip.OpenReader(zipfile)
-  if err != nil {
-    return path,err
-  }
-  defer func(){
-    z.Close()
-    os.Remove(zipfile)
-  }()
+	r, err := http.Get(url)
+	if err != nil {
+		e = err
+		return
+	}
+	defer r.Body.Close()
+	if _, err := io.Copy(dst, r.Body); err != nil {
+		e = err
+		return
+	}
 
-  for _,f := range z.File {
-    if f.Name != config.CsvName {
-      return
-    }
+	baseDir := filepath.Dir(zp)
+	z, err := zip.OpenReader(zp)
+	if err != nil {
+		e = err
+		return
+	}
+	defer z.Close()
 
-    path, e = func(fp *zip.File) (pa string, e error) {
-      zf, err := fp.Open()
-      defer zf.Close()
-      if err != nil {
-        return path,err
-      }
-      pa = filepath.Join(p.Dir, f.Name)
-      if fp.FileInfo().IsDir() {
-        os.MkdirAll(pa, os.ModePerm)
-        return
-      }
-      buf := make([]byte, fp.UncompressedSize)
-      _, e = io.ReadFull(zf, buf)
-      if e != nil {
-        return
-      }
-      e = ioutil.WriteFile(pa, buf, fp.Mode())
-      return
-    }(f)
-    if e != nil {
-      return
-    }
-  }
-  return
+	for _, zf := range z.File {
+		zff, err := zf.Open()
+		if err != nil {
+			continue
+		}
+		defer zff.Close()
+
+		if zf.Name != config.CsvName {
+			return
+		}
+		path = filepath.Join(baseDir, zf.Name)
+
+		if zf.FileInfo().IsDir() {
+			os.MkdirAll(path, os.ModePerm)
+			continue
+		}
+		csvf, err := os.OpenFile(
+			path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, zf.Mode())
+		if err != nil {
+			continue
+		}
+		defer csvf.Close()
+		_, err = io.Copy(csvf, zff)
+		if err != nil {
+			continue
+		}
+	}
+	return
 }
 
+func ParseAndInsert(filename string) (e error) {
+	f, err := os.OpenFile(filename, os.O_RDONLY, 0644)
+	if err != nil {
+		e = err
+		return
+	}
+	defer f.Close()
+	db, err := NewSqlite(config.Sqlite.Path, config.Sqlite.Save)
+	if err != nil {
+		e = err
+		return
+	}
+	defer db.Close()
 
-func (p Postal) ParseAndInsert(filename string) (e error) {
+	db.Memory.AutoMigrate(&Postal{})
 
-  Log("Info","parsing csv")
+	reader := CsvShiftJISReader(f)
 
-  f, fe := os.OpenFile(filename, os.O_RDONLY, 0644)
-  if fe != nil {
-    Log("Warn",fe,filename)
-      return fe
-  }
-  defer f.Close()
+	var counter int
+	var r1 = regexp.MustCompile("（(.*?)）")
+	var r2 = regexp.MustCompile("\\((.*?)\\)")
 
-  reader := csv.NewReader(transform.NewReader(f,japanese.ShiftJIS.NewDecoder()))
-  reader.Comma = ','
-  reader.LazyQuotes = true
+	var ps Postals
+	for {
+		counter++
 
-  connection, err := dbr.Open("sqlite3", config.Sqlite.Path, nil)
-  if err != nil {
-    return err
-  }
-  defer connection.Close()
-  session := connection.NewSession(nil)
+		line, err := reader.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
 
-  Log("Info", "initializing SQLite")
+		p := ParseLine(line, r1, r2)
+		ps = append(ps, p)
+	}
 
-  session.Exec("CREATE TABLE postal (id integer primary key autoincrement, first, last, code, prefcode, pref, pref_kana, city, city_kana, street, street_kana, jiscode);")
+	db.Memory.Table(Tablename).Create(&ps)
 
-  Log("Info","inserting to SQLite")
-
-  var counter int
-  var r1 = regexp.MustCompile("（(.*?)）")
-  var r2 = regexp.MustCompile("\\((.*?)\\)")
-
-  for {
-    counter++
-
-    line, err := reader.Read()
-    if err == io.EOF {
-      break
-    } else if err != nil {
-      Log("Warn",err)
-      return err
-    }
-
-    p := ParseLine(line, r1, r2)
-  
-    _,re := session.InsertInto("postal").
-                Columns("first", "last", "code", "prefcode", "pref", "pref_kana", "city", "city_kana", "street", "street_kana", "jiscode").
-                Record(p).
-                Exec()
-   if re != nil {
-     return re
-   }
-  }
-
-  Log("Info","screening SQLite")
-
-	var dups []PostalData
-	e = session.Select("code").
-				From("postal").
-				GroupBy("code").
-				Having(dbr.Expr("COUNT(`code`) > 1")).
-				LoadStruct(&dups)
+	var dups Postals
+	e = db.Memory.Table(Tablename).
+		Select("code").
+		Group("code").
+		Having("COUNT(`code`) > (?)", 1).
+		Find(&dups).Error
 	if e != nil {
-    Log("Warn", e)
-		return e
+		return
 	}
 
 	var dupCodes []string
-	var forDelete []PostalData
-	for _,pd1 := range dups {
+	var forDelete Postals
+
+	for _, pd1 := range dups {
 		dupCodes = append(dupCodes, pd1.Code)
 
-		var dupsByCode []PostalData
-		dupe := session.Select("*").
-					From("postal").
-					Where("code=?", pd1.Code).
-					LoadStruct(&dupsByCode)
-		if dupe != nil {
-			return dupe
+		var dupsByCode Postals
+		if err := db.Memory.Table(Tablename).
+			Select("*").
+			Where("code=?", pd1.Code).
+			Find(&dupsByCode).Error; err != nil {
+			return err
 		}
 		var added bool
-    var counter int
-		for _,pd2 := range dupsByCode{
-      counter++
-			for _,dp := range forDelete {
+		var counter int
+		for _, pd2 := range dupsByCode {
+			counter++
+			for _, dp := range forDelete {
 				if dp.Code == pd2.Code {
 					added = true
 				}
 			}
 			if added {
-				_,de := session.DeleteFrom("postal").
-							Where("id = ?", pd2.Id).
-							Exec()
-				if de != nil {
-					Log("Warn", de)
+				if err := db.Memory.Table(Tablename).Where("id = ?", pd2.Id).Delete(pd2).Error; err != nil {
+					// log error
+					continue
 				}
 			} else {
 				forDelete = append(forDelete, pd2)
-				_,ue := session.Update("postal").
-							Set("City","").
-							Set("City_kana","").
-							Set("Street","").
-							Set("Street_kana","").
-							Where("id = ?", pd2.Id).
-							Exec()
-				if ue != nil {
-					Log("Warn", ue)
+				pd2.EraseCity()
+				if err := db.Memory.Table(Tablename).Save(pd2).Error; err != nil {
+					// log error
+					continue
 				}
 			}
-      if counter > config.Chunk {
-//        time.Sleep(1000 * time.Millisecond)
-        counter = 0
-      }
+			if counter > config.Chunk {
+				//        time.Sleep(1000 * time.Millisecond)
+				counter = 0
+			}
 		}
 	}
 
-  Log("Info","cloning SQLite")
+	var results Postals
+	db.Memory.Table(Tablename).Find(&results)
+	results.SaveSQL(config.Sql.Path)
 
-  dumpcon, err := dbr.Open("sqlite3", config.Sqlite.Save, nil)
-  if err != nil {
-    Log("Warn",e)
-    return err
-  }
-  defer dumpcon.Close()
-  dumpsess := dumpcon.NewSession(nil)
-  _,e = dumpsess.Exec("ATTACH DATABASE '" + config.Sqlite.Path + "' AS mem;")
-  if e != nil {
-    Log("Warn",e)
-    return e
-  }
-  _,e = dumpsess.Exec("CREATE TABLE main.postal AS SELECT * FROM mem.postal;")
-  if e != nil {
-    Log("Warn",e)
-    return e
-  }
-  _,e = dumpsess.Exec("DETACH DATABASE mem;")
-  if e != nil {
-    Log("Warn",e)
-    return e
-  }
-
-
-  Log("Info","dumping SQLite")
-
-	var results []PostalData
-	e = session.Select("*").
-				From("postal").
-				LoadStruct(&results)
-	if e != nil {
-    Log("Warn", e)
-		return e
-	}
-  
-  buf := bytes.NewBufferString("")
-  for _,v := range results {
-    sqlValue := "'" + v.First + "','"+
-              v.Last + "','" + 
-              v.Code + "','" +
-              v.Prefcode + "','" +
-              v.Pref + "','" +
-              v.Pref_kana + "','" +
-              v.City + "','" +
-              v.City_kana + "','" +
-              v.Street + "','" +
-              v.Street_kana + "','" +
-              v.Jiscode + "'"
-    sql := "INSERT INTO postal (first, last, code, prefcode, pref, pref_kana, city, city_kana, street, street_kana, jiscode) VALUES (" + sqlValue + ");\n"
-    buf.WriteString(sql)
-  }
-  file,fe := os.Create(config.Sql.Path)
-  defer file.Close()
-  buf.WriteTo(file)
-
-  return nil
+	db.Save(Tablename)
+	return
 }
 
-func ParseLine(line []string, r1 *regexp.Regexp, r2 *regexp.Regexp) (p PostalData) {
-  var newline []string
-  for _,v := range line {
-    v = KanaHalfToFull(v)
-    if(v == "イカニケイサイガナイバアイ" || v == "以下に掲載がない場合"){
-      v = ""
-    }
-    newline = append(newline,v);
-  }
-  code := newline[2]
-  jiscode := newline[0]
+func ParseLine(line []string, r1 *regexp.Regexp, r2 *regexp.Regexp) (p Postal) {
+	var newline []string
+	for _, v := range line {
+		v = KanaHalfToFull(v)
+		if v == AvoidAddress1 || v == AvoidAddress2 {
+			v = ""
+		}
+		newline = append(newline, v)
+	}
+	code := newline[2]
+	jiscode := newline[0]
 
-  street := r1.ReplaceAllString(newline[8], "")
-  street_kana := r2.ReplaceAllString(newline[5], "")
+	street := r1.ReplaceAllString(newline[8], "")
+	street_kana := r2.ReplaceAllString(newline[5], "")
 
-	p = PostalData{
-		First: code[0:3],
-		Last: code[3:],
-		Code: code,
-		Prefcode: jiscode[0:2],
-		Pref: newline[6],
-		Pref_kana: newline[3],
-    City: newline[7],
-    City_kana: newline[4],
-    Street: street,
-    Street_kana: street_kana,
-		Jiscode: jiscode,
+	p = Postal{
+		First:       code[0:3],
+		Last:        code[3:],
+		Code:        code,
+		Prefcode:    jiscode[0:2],
+		Pref:        newline[6],
+		Pref_kana:   newline[3],
+		City:        newline[7],
+		City_kana:   newline[4],
+		Street:      street,
+		Street_kana: street_kana,
+		Jiscode:     jiscode,
 	}
 	return p
 }
-
-

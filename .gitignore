@@ -1,6 +1,5 @@
-/build
-/vendor
-/temp
-/db
+build/*
 .env
+assets/storage/*.sql
+assets/storage/*.db
 !.gitkeep

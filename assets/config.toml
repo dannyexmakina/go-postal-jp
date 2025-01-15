@@ -1,13 +1,15 @@
+asset_path = "./assets"
+storage_path = "./assets/storage"
 url = "http://www.post.japanpost.jp/zipcode/dl/kogaki/zip/ken_all.zip"
 chunk = 1000
-csvname = "KEN_ALL.CSV"
+csv_name = "KEN_ALL.CSV"
 
 [sql]
-path = "/var/shared/postal.sql"
+path = "./assets/storage/postal.sql"
 
 [sqlite]
 path = "file:memdb1?mode=memory&cache=shared"
-save = "/var/shared/postal.db"
+save = "./assets/storage/postal.db"
 
 [mysql]
 dsn = "root:password@tcp(mysql:3307)/test?charset=utf8"
