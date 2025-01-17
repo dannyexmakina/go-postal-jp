@@ -20,14 +20,17 @@ type PostalConfig struct {
 	Url         string             `toml:"url"`
 	CsvName     string             `toml:"csv_name"`
 	Sql         PostalConfigSql    `toml:"sql"`
+	Json        PostalConfigJson   `toml:"json"`
 	Sqlite      PostalConfigSqlite `toml:"sqlite"`
 	Mysql       PostalConfigMySql  `toml:"mysql"`
 }
 type PostalConfigSqlite struct {
 	Path string `toml:"path"`
-	Save string `toml:"save"`
 }
 type PostalConfigSql struct {
+	Path string `toml:"path"`
+}
+type PostalConfigJson struct {
 	Path string `toml:"path"`
 }
 type PostalConfigMySql struct {

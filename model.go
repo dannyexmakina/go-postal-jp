@@ -1,8 +1,8 @@
 package main
 
-import (
-	"fmt"
-	"os"
+const (
+	Tablename   = "postals"
+	TempDirName = "tmp"
 )
 
 type Postal struct {
@@ -28,60 +28,32 @@ func (p *Postal) EraseCity() *Postal {
 	p.Street_kana = ""
 	return p
 }
+func (ps Postals) Length() (n int) {
+	return len(ps.List())
+}
 
-func CloseSQL(f *os.File) (e error) {
-	f.Close()
+func (ps Postals) List() (p []Postal) {
+	p = ps
 	return
 }
 
-func (ps Postals) AppendSQL(f *os.File) (e error) {
-	s, err := ps.SQL()
-	if err != nil {
-		e = err
-		return
+func (ps *Postals) Unique() (e error) {
+	var newps []Postal
+	m := make(map[string]Postal)
+	for _, p := range ps.List() {
+		v, found := m[p.Code]
+		if found {
+			v.EraseCity()
+			m[p.Code] = v
+		} else {
+			m[p.Code] = p
+		}
 	}
-	fmt.Fprintln(f, s)
-	return
-}
-
-func OpenSQL(dst string) (f *os.File, e error) {
-	os.Remove(dst)
-	return os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
-}
-
-func (ps Postals) SaveSQL(dst string) (e error) {
-
-	s, err := ps.SQL()
-	if err != nil {
-		e = err
-		return
+	for _, v := range m {
+		newps = append(newps, v)
 	}
-
-	if err := os.WriteFile(dst, []byte(s), 0777); err != nil {
-		e = err
-		return
-	}
-	return
-}
-
-func (ps Postals) SQL() (s string, e error) {
-	tmpl := "INSERT INTO postal (" +
-		"first, last, code, prefcode, pref, pref_kana, city, city_kana, street, street_kana, jiscode" +
-		") VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');\n"
-	for _, v := range ps {
-		sql := fmt.Sprintf(tmpl,
-			v.First,
-			v.Last,
-			v.Code,
-			v.Prefcode,
-			v.Pref,
-			v.Pref_kana,
-			v.City,
-			v.City_kana,
-			v.Street,
-			v.Street_kana,
-			v.Jiscode)
-		s += sql
-	}
+	var np Postals
+	np = newps
+	ps = &np
 	return
 }

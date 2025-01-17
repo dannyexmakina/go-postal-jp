@@ -1,5 +1,4 @@
 build/*
 .env
-assets/storage/*.sql
-assets/storage/*.db
+assets/storage/*
 !.gitkeep

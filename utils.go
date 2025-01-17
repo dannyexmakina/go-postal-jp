@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -44,6 +46,12 @@ func Log(level string, messages ...interface{}) {
 	default:
 		log.Fatal("-", list...)
 	}
+}
+
+func SjisByteToUtf8(sjisByte []byte) (b []byte, e error) {
+	sjisReader := bytes.NewReader(sjisByte)
+	ioReader := transform.NewReader(sjisReader, japanese.ShiftJIS.NewDecoder())
+	return io.ReadAll(ioReader)
 }
 
 func CsvShiftJISReader(f *os.File) (r *csv.Reader) {

@@ -8,8 +8,7 @@ csv_name = "KEN_ALL.CSV"
 path = "./assets/storage/postal.sql"
 
 [sqlite]
-path = "file:memdb1?mode=memory&cache=shared"
-save = "./assets/storage/postal.db"
+path = "./assets/storage/postal.sqlite"
 
-[mysql]
-dsn = "root:password@tcp(mysql:3307)/test?charset=utf8"
+[json]
+path = "./assets/storage/postal.json"
