@@ -1,0 +1,25 @@
+version: '3'
+
+tasks:
+  build:
+    deps: [prepare]
+    cmds:
+      - go build -o ./build/go-postal-jp
+
+  fmt:
+    cmds:
+      - go fmt
+
+  test:
+    cmds:
+      - go test
+
+  tidy:
+    cmds:
+      - go mod tidy
+
+  prepare:
+    cmds:
+      - task: tidy
+      - task: fmt
+      - task: test

@@ -3,13 +3,12 @@ package main
 import (
 	"errors"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
 
 var RootCmd = &cobra.Command{
-	Use:   "postal",
+	Use:   "go-postal-jp",
 	Short: "postal code",
 	Long:  `Batch for postal code of JAPAN POST`,
 }
@@ -46,8 +45,7 @@ func Run() (e error) {
 		e = err
 		return
 	}
-	temp := filepath.Dir(csvpath)
-	os.RemoveAll(temp)
+	os.Remove(csvpath)
 
 	return
 }

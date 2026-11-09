@@ -22,7 +22,7 @@ func ParseFile(filename string) (ps Postals, e error) {
 		return
 	}
 	b = bytes.TrimSpace(b)
-	lines := strings.Split(string(b), "\n")
+	lines := strings.Split(strings.ReplaceAll(string(b), "\r\n", "\n"), "\n")
 	for _, line := range lines {
 		p, err := ParseLine(line)
 		if err != nil {
