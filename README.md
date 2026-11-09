@@ -1,4 +1,6 @@
-# postal
+# go-postal-jp
+
+日本語 | [English](README.en.md)
 
 - 日本郵便が提供する郵便番号CSVを定型のSQL/SQLiteDBに変換するコマンドライン
   - <http://www.post.japanpost.jp/zipcode/dl/kogaki-zip.html>
@@ -32,58 +34,52 @@
 
 ## 文字列処理仕様
 
-- 文字コードをCP392 -> UTF-8に変換
-- 半角カナ -> 全角カナに変換
+- UTF-8版データ（`utf_ken_all.csv`）をそのまま使用（文字コード変換なし）
+- 半角カナ -> 全角カナに変換（UTF-8版は全角カナのため通常は該当なし）
 - 町域に「（）」（全角カッコ）「()」（半角カッコ）が含まれる場合は該当部分を削除
   - 町域範囲についての但し書きであるため
 - "以下に掲載がない場合" および "イカニケイサイガナイバアイ" を削除
 
 ## Goビルド
 
-- `make build`
+- `task build`
 
 ## 生成コマンド
 
 - ダウンロード
-  - `./build/postal download`
+  - `./build/go-postal-jp download`
 
 - パース・SQL/SQLite/JSON生成
-  - `./build/postal parse {CSV file}`
+  - `./build/go-postal-jp parse {CSV file}`
 
 - SQL表示
-  - `./build/postal get sql`
+  - `./build/go-postal-jp get sql`
 
 - JSON表示
-  - `./build/postal get json`
+  - `./build/go-postal-jp get json`
 
 - ダウンロード・パース・SQL/SQLite/JSON生成
-  - `./build/postal run`
+  - `./build/go-postal-jp run`
 
 ## 生成されるファイル
 
-- `assets/storage/postal.sql`
+- `storage/postal.sql`
   - SQLファイル（INSERT文）
-- `assets/storage/postal.sqlite`
+- `storage/postal.sqlite`
   - SQLite DB
-- `assets/storage/postal.json`
+- `storage/postal.json`
   - JSON
 
 ## サーバサイドで使用する場合の注意事項
 
 #### 専用DBスキーマおよび使用上の注意事項
 
-- `env/postal/docker/mysql/docker-entrypoint-initdb.d/create.sql`
+- [docs/create.sql](docs/create.sql)
 - [docs/db.md](docs/db.md)
 
 #### 実行時設定
 
-- [docs/env.md](docs/env.md)
 - [docs/config.md](docs/config.md)
-
-#### 実行コマンド
-
-- `cd env/postal`
-- `docker-compose up`
 
 #### API生成用 Swaggerファイル
 

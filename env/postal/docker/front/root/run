@@ -1,6 +1,0 @@
-#!/bin/bash
-
-cd /var/go/src/gitlab.flama.jp/go/postal
-rm -f ./build/postal
-go build -o ./build/postal
-./build/postal convert

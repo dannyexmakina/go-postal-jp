@@ -1,68 +1,20 @@
 package main
 
 import (
-	"bytes"
-	"encoding/csv"
-	"fmt"
-	"io"
 	"os"
 	"strings"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"golang.org/x/text/encoding/japanese"
-	"golang.org/x/text/transform"
 )
 
-func Log(level string, messages ...interface{}) {
-	log, _ := zap.NewDevelopment()
-	log = log.WithOptions(zap.AddCallerSkip(1))
-	defer log.Sync()
-
-	var list []zapcore.Field
-	for i, v := range messages {
-		index := fmt.Sprintf("%d", (i + 1))
-		list = append(list, zap.Any(index, v))
+func IsDir(path string) bool {
+	fileinfo, err := os.Stat(path)
+	if err != nil {
+		return false
 	}
-	switch strings.ToUpper(level) {
-	case "INFO":
-		if !Quiet {
-			log.Info("-", list...)
-		}
-	case "DEBUG":
-		if !Quiet {
-			log.Debug("-", list...)
-		}
-	case "ERROR":
-		log.Error("-", list...)
-	case "ERR":
-		log.Error("-", list...)
-	case "WARN":
-		log.Warn("-", list...)
-	case "WARNING":
-		log.Warn("-", list...)
-	case "FATAL":
-		log.Fatal("-", list...)
-	default:
-		log.Fatal("-", list...)
-	}
-}
-
-func SjisByteToUtf8(sjisByte []byte) (b []byte, e error) {
-	sjisReader := bytes.NewReader(sjisByte)
-	ioReader := transform.NewReader(sjisReader, japanese.ShiftJIS.NewDecoder())
-	return io.ReadAll(ioReader)
-}
-
-func CsvShiftJISReader(f *os.File) (r *csv.Reader) {
-	r = csv.NewReader(transform.NewReader(f, japanese.ShiftJIS.NewDecoder()))
-	r.Comma = ','
-	r.LazyQuotes = true
-
-	return
+	return fileinfo.Mode().IsDir()
 }
 
 // Convert Hankaku-Kana to Zenkaku-kana
+// UTF-8版データは全角カナだが、旧データ・手動入力への保険として残す
 func KanaHalfToFull(input string) string {
 	replacer := strings.NewReplacer(
 		"ｶﾞ", "ガ",
@@ -147,12 +99,4 @@ func KanaHalfToFull(input string) string {
 		"ﾝ", "ン",
 	)
 	return replacer.Replace(input)
-}
-
-func IsDir(path string) bool {
-	fileinfo, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-	return fileinfo.Mode().IsDir()
 }

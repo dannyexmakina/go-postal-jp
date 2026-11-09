@@ -1,36 +1,38 @@
 # 実行時設定
 
-- `assets/config.toml`
+- `.env`（`.env.example` をコピーして作成。未設定の項目は既定値を使用）
 
-#### `url`
+#### `URL`
 
 - ZIPファイル取得先URL
   - 通常は変更する必要が無い
 
-#### `chunk`
+#### `CHUNK`
 
 - レコードを分割処理する件数
   - 通常は 1000 のまま変更する必要が無い
 
-## `sql`
+#### `STORAGE_PATH`
 
-#### `path`
+- 生成物の保存ディレクトリ
+
+#### `CSV_NAME`
+
+- ZIP内のCSVファイル名
+
+#### `SQL_PATH`
 
 - SQLファイル保存先
 
+#### `JSON_PATH`
 
-## `sqlite`
+- JSONファイル保存先
 
-#### `path`
+#### `SQLITE_PATH`
 
 - SQLiteファイルの生成先
-  - 通常は `":memory:"` のまま変更する必要が無い
-  
 
-## `mysql`
-
-#### `dsn`
+#### `MYSQL_DSN`
 
 - DB接続先
-  - 例）dsn=root:password@tcp(127.0.0.1:3306)/test?charset=utf8
-
+  - 例）`MYSQL_DSN=root:password@tcp(127.0.0.1:3306)/test?charset=utf8`
