@@ -84,3 +84,7 @@
 #### API生成用 Swaggerファイル
 
 - [docs/swagger.yml](docs/swagger.yml)
+
+## ライセンス
+
+[MIT](LICENSE)
